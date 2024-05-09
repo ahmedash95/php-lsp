@@ -7,6 +7,8 @@ type InitializeRequest struct {
 
 type InitializeRequestParams struct {
 	ClientInfo *ClientInfo `json:"clientInfo"`
+	RootPath   string      `json:"rootPath"` // is null if no folder is open
+	RootUri    string      `json:"rootUri"`  // is null if no folder is open
 }
 
 type ClientInfo struct {

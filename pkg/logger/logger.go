@@ -9,7 +9,7 @@ var logger *log.Logger
 
 func GetLogger() *log.Logger {
 	if logger == nil {
-		panic("Logger not yet initialized")
+		return log.New(os.Stdout, "[PHP-LSP] ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
 	return logger
 }

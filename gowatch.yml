@@ -1,0 +1,6 @@
+build_pkg: "cmd/php-lsp-server/languageserver.go"
+
+wath_path:
+  - cmd
+  - pkg
+  - internal

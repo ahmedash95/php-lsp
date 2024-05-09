@@ -267,6 +267,18 @@ func TestGetSymbols(t *testing.T) {
 				{Name: "bar", Kind: treesitter.Kind_Method, Position: treesitter.Position{LineStart: 2, LineEnd: 2, OffsetStart: 29, OffsetEnd: 32}},
 			},
 		},
+		"abstract function": {
+			code: `<?php
+			class Foo {
+				abstract public function bar();
+				abstract protected function doRead(#[\SensitiveParameter] string $sessionId): string;
+			}`,
+			expected: []treesitter.Symbol{
+				{Name: "Foo", Kind: treesitter.Kind_Class, Position: treesitter.Position{LineStart: 1, LineEnd: 1, OffsetStart: 9, OffsetEnd: 12}},
+				{Name: "bar", Kind: treesitter.Kind_Method, Position: treesitter.Position{LineStart: 2, LineEnd: 2, OffsetStart: 29, OffsetEnd: 32}},
+				{Name: "doRead", Kind: treesitter.Kind_Method, Position: treesitter.Position{LineStart: 3, LineEnd: 3, OffsetStart: 29, OffsetEnd: 35}},
+			},
+		},
 	}
 
 	for name, tc := range tests {
@@ -284,5 +296,29 @@ func TestGetSymbols(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestSingleCase(t *testing.T) {
+	code := `<?php
+class Foo {
+    abstract public function baz(#[\SensitiveParameter] string $sessionId): string;
+}`
+
+	actual := treesitter.GetDocumentSymbols(code)
+	expected := []treesitter.Symbol{
+		{Name: "Foo", Kind: treesitter.Kind_Class, Position: treesitter.Position{LineStart: 1, LineEnd: 1, OffsetStart: 9, OffsetEnd: 12}},
+		{Name: "baz", Kind: treesitter.Kind_Method, Position: treesitter.Position{LineStart: 3, LineEnd: 3, OffsetStart: 29, OffsetEnd: 32}},
+	}
+
+	if len(actual) != len(expected) {
+		t.Errorf("Expected %v, got %v", expected, actual)
+		return
+	}
+	for i, _ := range expected {
+		if expected[i] != actual[i] {
+			t.Errorf("Expected %v, got %v", expected, actual)
+			break
+		}
 	}
 }

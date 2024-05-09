@@ -7,17 +7,21 @@ import (
 	"ahmedash95/php-lsp-server/pkg/treesitter"
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 )
 
 func main() {
+	fmt.Println("Starting PHP LSP Server")
+
 	l := logger.CreateLogFile("/tmp/php-lsp-server.log")
 	l.Println("Starting PHP LSP Server")
 
 	logger.SetLogger(l)
 
-	state := treesitter.NewState()
+	workspace := treesitter.NewWorkspace("")
 
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(rpc.Split)
@@ -29,6 +33,8 @@ func main() {
 		defer func() {
 			if r := recover(); r != nil {
 				l.Printf("Recovered in f: %v\n", r)
+				// Print the stack trace
+				fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
 			}
 		}()
 
@@ -38,13 +44,18 @@ func main() {
 			continue
 		}
 
-		handleMessage(os.Stdout, state, method, contents)
+		handleMessage(os.Stdout, workspace, method, contents)
 	}
 }
 
-func handleMessage(writer io.Writer, state treesitter.State, method string, contents []byte) {
+func handleMessage(writer io.Writer, state *treesitter.Workspace, method string, contents []byte) {
 	logger := logger.GetLogger()
 	logger.Printf("Recived message: [%s]", method)
+
+	if method != "initialize" && state == nil {
+		logger.Println("Error: Initialize request must be sent first before any other request")
+		return
+	}
 
 	switch method {
 	case "initialize":
@@ -56,8 +67,14 @@ func handleMessage(writer io.Writer, state treesitter.State, method string, cont
 
 		logger.Printf("Connected to: %s %s", request.Params.ClientInfo.Name, request.Params.ClientInfo.Version)
 
+		logger.Printf("Received initialize request: %v", request.Params)
+
 		message := lsp.NewInitializeResponse(request.ID)
 		reply := rpc.EncodeMessage(message)
+
+		logger.Printf("Initializing workspace: %s", request.Params.RootPath)
+		state.RootPath = request.Params.RootPath
+		state.StartIndex()
 
 		writer := os.Stdout
 		writer.Write([]byte(reply))

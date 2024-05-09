@@ -1,10 +1,10 @@
 package main
 
 import (
-	"ahmedash95/php-lsp-server/pkg/analyizer"
 	"ahmedash95/php-lsp-server/pkg/logger"
 	"ahmedash95/php-lsp-server/pkg/lsp"
 	"ahmedash95/php-lsp-server/pkg/rpc"
+	"ahmedash95/php-lsp-server/pkg/treesitter"
 	"bufio"
 	"encoding/json"
 	"io"
@@ -17,7 +17,7 @@ func main() {
 
 	logger.SetLogger(l)
 
-	state := analyizer.NewState()
+	state := treesitter.NewState()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(rpc.Split)
@@ -42,7 +42,7 @@ func main() {
 	}
 }
 
-func handleMessage(writer io.Writer, state analyizer.State, method string, contents []byte) {
+func handleMessage(writer io.Writer, state treesitter.State, method string, contents []byte) {
 	logger := logger.GetLogger()
 	logger.Printf("Recived message: [%s]", method)
 

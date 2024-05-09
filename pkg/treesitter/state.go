@@ -1,9 +1,8 @@
-package analyizer
+package treesitter
 
 import (
 	"ahmedash95/php-lsp-server/pkg/logger"
 	"ahmedash95/php-lsp-server/pkg/lsp"
-	"ahmedash95/php-lsp-server/pkg/treesitter"
 )
 
 type TextDocumentItem struct {
@@ -47,7 +46,7 @@ func (s *State) Update(uri string, contentChanges []lsp.TextDocumentContentChang
 
 func (s *State) TextDocumentDocumentSymbols(id int, uri string) lsp.DocumentSymbolResponse {
 	logger.GetLogger().Printf("Document symbol for textDocument: %s \n content: %s", uri, s.Get(uri).Text)
-	symbols := treesitter.GetDocumentSymbols(s.Get(uri).Text)
+	symbols := GetDocumentSymbols(s.Get(uri).Text)
 
 	items := []lsp.DocumentSymbol{}
 

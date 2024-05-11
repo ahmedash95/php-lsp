@@ -6,6 +6,7 @@ import (
 	workspacescanner "ahmedash95/php-lsp-server/pkg/workspace_scanner"
 	"fmt"
 
+	"github.com/sahilm/fuzzy"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -137,30 +138,55 @@ func (s *Workspace) TextDocumentDocumentSymbols(id int, uri string) lsp.Document
 	return response
 }
 
-func (s *Workspace) WorkspaceSymbols(id int, query string) lsp.WorkspaceSymbolResponse {
+type wsSymbols []struct {
+	URI    string             `json:"uri"`
+	Symbol lsp.DocumentSymbol `json:"symbol"`
+}
 
+// github.com/sahilm/fuzzy
+func (s wsSymbols) Len() int {
+	return len(s)
+}
+
+func (s wsSymbols) String(i int) string {
+	return s[i].Symbol.Name
+}
+
+func (s *Workspace) WorkspaceSymbols(id int, query string) lsp.WorkspaceSymbolResponse {
 	symbols := []lsp.WorkSpaceSymbol{}
 
+	urisSymbols := wsSymbols{}
 	for _, item := range s.Uris {
 		for _, symbol := range item.DocumentSymbols {
-			symbols = append(symbols, lsp.WorkSpaceSymbol{
-				Name: symbol.Name,
-				Kind: symbol.Kind,
-				Location: lsp.Location{
-					URI: item.Uri,
-					Range: lsp.Range{
-						Start: lsp.Position{
-							Line:      symbol.Range.Start.Line,
-							Character: symbol.Range.Start.Character,
-						},
-						End: lsp.Position{
-							Line:      symbol.Range.End.Line,
-							Character: symbol.Range.End.Character,
-						},
-					},
-				},
+			urisSymbols = append(urisSymbols, struct {
+				URI    string             `json:"uri"`
+				Symbol lsp.DocumentSymbol `json:"symbol"`
+			}{
+				URI:    item.Uri,
+				Symbol: symbol,
 			})
 		}
+	}
+
+	for _, r := range fuzzy.FindFrom(query, urisSymbols) {
+		ds := urisSymbols[r.Index]
+		symbols = append(symbols, lsp.WorkSpaceSymbol{
+			Name: ds.Symbol.Name,
+			Kind: ds.Symbol.Kind,
+			Location: lsp.Location{
+				URI: ds.URI,
+				Range: lsp.Range{
+					Start: lsp.Position{
+						Line:      ds.Symbol.Range.Start.Line,
+						Character: ds.Symbol.Range.Start.Character,
+					},
+					End: lsp.Position{
+						Line:      ds.Symbol.Range.End.Line,
+						Character: ds.Symbol.Range.End.Character,
+					},
+				},
+			},
+		})
 	}
 
 	response := lsp.WorkspaceSymbolResponse{

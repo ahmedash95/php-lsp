@@ -136,3 +136,40 @@ func (s *Workspace) TextDocumentDocumentSymbols(id int, uri string) lsp.Document
 
 	return response
 }
+
+func (s *Workspace) WorkspaceSymbols(id int, query string) lsp.WorkspaceSymbolResponse {
+
+	symbols := []lsp.WorkSpaceSymbol{}
+
+	for _, item := range s.Uris {
+		for _, symbol := range item.DocumentSymbols {
+			symbols = append(symbols, lsp.WorkSpaceSymbol{
+				Name: symbol.Name,
+				Kind: symbol.Kind,
+				Location: lsp.Location{
+					URI: item.Uri,
+					Range: lsp.Range{
+						Start: lsp.Position{
+							Line:      symbol.Range.Start.Line,
+							Character: symbol.Range.Start.Character,
+						},
+						End: lsp.Position{
+							Line:      symbol.Range.End.Line,
+							Character: symbol.Range.End.Character,
+						},
+					},
+				},
+			})
+		}
+	}
+
+	response := lsp.WorkspaceSymbolResponse{
+		Response: lsp.Response{
+			RPC: "2.0",
+			ID:  id,
+		},
+		Result: symbols,
+	}
+
+	return response
+}

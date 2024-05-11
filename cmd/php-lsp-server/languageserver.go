@@ -48,11 +48,11 @@ func main() {
 	}
 }
 
-func handleMessage(writer io.Writer, state *treesitter.Workspace, method string, contents []byte) {
+func handleMessage(writer io.Writer, workspace *treesitter.Workspace, method string, contents []byte) {
 	logger := logger.GetLogger()
 	logger.Printf("Recived message: [%s]", method)
 
-	if method != "initialize" && state == nil {
+	if method != "initialize" && workspace == nil {
 		logger.Println("Error: Initialize request must be sent first before any other request")
 		return
 	}
@@ -73,8 +73,8 @@ func handleMessage(writer io.Writer, state *treesitter.Workspace, method string,
 		reply := rpc.EncodeMessage(message)
 
 		logger.Printf("Initializing workspace: %s", request.Params.RootPath)
-		state.RootPath = request.Params.RootPath
-		state.StartIndex()
+		workspace.RootPath = request.Params.RootPath
+		workspace.StartIndex()
 
 		writer := os.Stdout
 		writer.Write([]byte(reply))
@@ -85,7 +85,7 @@ func handleMessage(writer io.Writer, state *treesitter.Workspace, method string,
 			return
 		}
 
-		state.Put(request.Params.TextDocument.Uri, request.Params.TextDocument.Text)
+		workspace.Put(request.Params.TextDocument.Uri, request.Params.TextDocument.Text)
 		logger.Printf("Opened file: %s", request.Params.TextDocument.Uri)
 
 	case "textDocument/didChange":
@@ -95,7 +95,7 @@ func handleMessage(writer io.Writer, state *treesitter.Workspace, method string,
 			return
 		}
 
-		state.Update(request.Params.TextDocument.Uri, request.Params.ContentChanges)
+		workspace.Update(request.Params.TextDocument.Uri, request.Params.ContentChanges)
 		logger.Printf("Changed file: %s", request.Params.TextDocument.Uri)
 
 	case "textDocument/documentSymbol":
@@ -105,8 +105,19 @@ func handleMessage(writer io.Writer, state *treesitter.Workspace, method string,
 			return
 		}
 
-		response := state.TextDocumentDocumentSymbols(request.ID, request.Params.TextDocument.Uri)
+		response := workspace.TextDocumentDocumentSymbols(request.ID, request.Params.TextDocument.Uri)
 		writeResponse(writer, response)
+	case "workspace/symbol":
+		var request lsp.WorkspaceSymbolRequest
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Println("Error unmarshalling workspaceSymbol request: ", err)
+			return
+		}
+
+		response := workspace.WorkspaceSymbols(request.ID, request.Params.Query)
+		writeResponse(writer, response)
+
+		logger.Printf("Returning workspace symbols response: %v", response)
 	}
 }
 

@@ -7,7 +7,9 @@ The LSP is implemented in Go and is designed to be fast and efficient. and as Go
 ## Features
 - [x] Text Document Sync (full sync)
 - [x] Document Symbols
-- [ ] Workspace Symbols
+- [x] Workspace Symbols
+    - [ ] Support for query param
+- [ ] Completion
 - [ ] Code Actions
 - [ ] Hover
 - [ ] Signature Help

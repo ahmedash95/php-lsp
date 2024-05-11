@@ -27,9 +27,10 @@ type InitializeResult struct {
 }
 
 type ServerCapabilities struct {
-	TextDocumentSync       int            `json:"textDocumentSync"`
-	CompletionProvider     map[string]any `json:"completionProvider"`
-	DocumentSymbolProvider bool           `json:"documentSymbolProvider"`
+	TextDocumentSync        int            `json:"textDocumentSync"`
+	CompletionProvider      map[string]any `json:"completionProvider"`
+	DocumentSymbolProvider  bool           `json:"documentSymbolProvider"`
+	WorkspaceSymbolProvider bool           `json:"workspaceSymbolProvider"`
 }
 
 type ServerInfo struct {
@@ -45,9 +46,10 @@ func NewInitializeResponse(id int) InitializeResponse {
 		},
 		Result: InitializeResult{
 			Capabilities: ServerCapabilities{
-				TextDocumentSync:       1,   // Full sync
-				CompletionProvider:     nil, // map[string]any{},
-				DocumentSymbolProvider: true,
+				TextDocumentSync:        1,   // Full sync
+				CompletionProvider:      nil, // map[string]any{},
+				DocumentSymbolProvider:  true,
+				WorkspaceSymbolProvider: true,
 			},
 			ServerInfo: ServerInfo{
 				Name:    "PHP Language Server",

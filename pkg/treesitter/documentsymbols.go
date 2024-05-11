@@ -1,8 +1,6 @@
 package treesitter
 
 import (
-	"fmt"
-
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -36,8 +34,6 @@ func WalkTree(content string, node *sitter.Node, symbols *[]Symbol) {
 	if node == nil {
 		return
 	}
-
-	fmt.Printf("Node type: %s - %s\n", node.Type(), getNodeText(content, node))
 
 	switch node.Type() {
 	case "variable_name":
@@ -76,7 +72,6 @@ func WalkTree(content string, node *sitter.Node, symbols *[]Symbol) {
 			*symbols = append(*symbols, getSymbolFromNode(content, Kind_Class, n))
 		}
 	case "method_declaration":
-		panic("method_declaration")
 		n := findNodeOfType(node, "name")
 		*symbols = append(*symbols, getSymbolFromNode(content, Kind_Method, n))
 		return

@@ -38,6 +38,7 @@ func main() {
 			}
 		}()
 
+		logger.GetLogger().Printf("Recived request: [%s]", msg)
 		method, contents, err := rpc.DecodeMessage(msg)
 		if err != nil {
 			l.Println("Error decoding message: ", err)
@@ -65,19 +66,32 @@ func handleMessage(writer io.Writer, workspace *treesitter.Workspace, method str
 			return
 		}
 
-		logger.Printf("Connected to: %s %s", request.Params.ClientInfo.Name, request.Params.ClientInfo.Version)
-
-		logger.Printf("Received initialize request: %v", request.Params)
-
 		message := lsp.NewInitializeResponse(request.ID)
 		reply := rpc.EncodeMessage(message)
 
 		logger.Printf("Initializing workspace: %s", request.Params.RootPath)
 		workspace.RootPath = request.Params.RootPath
-		workspace.StartIndex()
 
 		writer := os.Stdout
 		writer.Write([]byte(reply))
+
+		progressStartRequest := lsp.CreateProgressBeginRequest("indexing", "Indexing workspace")
+		progressStartReply := rpc.EncodeMessage(progressStartRequest)
+		logger.Println(progressStartReply)
+		writer.Write([]byte(progressStartReply))
+
+		update := func(path string, percent int) {
+			logger.Printf("Indexing file: %s", path)
+			progressUpdateRequest := lsp.CreateProgressUpdateRequest(progressStartRequest.Params.Token, path, percent)
+			progressUpdateReply := rpc.EncodeMessage(progressUpdateRequest)
+			logger.Println(progressUpdateReply)
+			writer.Write([]byte(progressUpdateReply))
+		}
+		workspace.StartIndex(update, func() {
+			progressEndRequest := lsp.CreateProgressEndRequest(progressStartRequest.Params.Token, "Indexing complete")
+			progressEndReply := rpc.EncodeMessage(progressEndRequest)
+			writer.Write([]byte(progressEndReply))
+		})
 	case "textDocument/didOpen":
 		var request lsp.DidOpenTextDocumentNotification
 		if err := json.Unmarshal(contents, &request); err != nil {

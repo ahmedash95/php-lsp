@@ -31,6 +31,11 @@ type ServerCapabilities struct {
 	CompletionProvider      map[string]any `json:"completionProvider"`
 	DocumentSymbolProvider  bool           `json:"documentSymbolProvider"`
 	WorkspaceSymbolProvider bool           `json:"workspaceSymbolProvider"`
+	Window                  Window         `json:"window"`
+}
+
+type Window struct {
+	WorkDoneProgress bool `json:"workDoneProgress"`
 }
 
 type ServerInfo struct {
@@ -50,6 +55,9 @@ func NewInitializeResponse(id int) InitializeResponse {
 				CompletionProvider:      nil, // map[string]any{},
 				DocumentSymbolProvider:  true,
 				WorkspaceSymbolProvider: true,
+				Window: Window{
+					WorkDoneProgress: true,
+				},
 			},
 			ServerInfo: ServerInfo{
 				Name:    "PHP Language Server",

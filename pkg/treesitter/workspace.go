@@ -1,6 +1,7 @@
 package treesitter
 
 import (
+	"ahmedash95/php-lsp-server/internal/util"
 	"ahmedash95/php-lsp-server/pkg/logger"
 	"ahmedash95/php-lsp-server/pkg/lsp"
 	workspacescanner "ahmedash95/php-lsp-server/pkg/workspace_scanner"
@@ -31,16 +32,19 @@ func NewWorkspace(rootpath string) *Workspace {
 	}
 }
 
-func (s *Workspace) StartIndex() {
+func (s *Workspace) StartIndex(update func(path string, percent int), end func()) {
 	logger.GetLogger().Printf("Indexing workspace: %s", s.RootPath)
 
 	scanner := workspacescanner.NewScanner(s.RootPath)
 	files := scanner.Scan([]string{".php"})
 
-	for _, file := range files {
+	defer end()
+
+	// @todo parse file in parallel to speed up indexing
+	for i, file := range files {
 		uri := fmt.Sprintf("file://%s/%s", s.RootPath, file)
 
-		if s.Has(uri) {
+		if _, ok := s.Uris[uri]; ok {
 			continue
 		}
 
@@ -48,16 +52,13 @@ func (s *Workspace) StartIndex() {
 
 		content := scanner.GetFileContent(file)
 		s.Put(uri, content)
+
+		update(file, util.CalculatePercentage(i, len(files)))
 	}
 }
 
 func (s *Workspace) Get(uri string) *TextDocumentItem {
 	return s.Uris[uri]
-}
-
-func (s *Workspace) Has(uri string) bool {
-	_, ok := s.Uris[uri]
-	return ok
 }
 
 func (s *Workspace) Put(uri string, content string) {

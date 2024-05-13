@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/sahilm/fuzzy"
-	sitter "github.com/smacker/go-tree-sitter"
 )
 
 type TextDocumentItem struct {
@@ -16,7 +15,6 @@ type TextDocumentItem struct {
 	LanguageId      string               `json:"languageId"`
 	Version         int                  `json:"version"`
 	Text            string               `json:"text"`
-	AST             *sitter.Tree         `json:"ast"`
 	DocumentSymbols []lsp.DocumentSymbol `json:"documentSymbols"`
 }
 
@@ -69,25 +67,14 @@ func (s *Workspace) Put(uri string, content string) {
 		Text:       content,
 	}
 
-	// document is parsed and AST is generated
-	var err error
-	s.Uris[uri].AST, err = ParseDocument(content)
-	if err != nil {
-		logger.GetLogger().Printf("Error parsing document: %s", err)
-	}
-
 	s.FetchDocumentSymbols(uri, content)
 }
 
 // @todo implement incremental parsing
 func (s *Workspace) Update(uri string, contentChanges []lsp.TextDocumentContentChangeEvent) {
 	s.Uris[uri].Text = contentChanges[0].Text
-	// document is re-parsed and AST is regenerated
-	var err error
-	s.Uris[uri].AST, err = ParseDocument(contentChanges[0].Text)
-	if err != nil {
-		logger.GetLogger().Printf("Error parsing document: %s", err)
-	}
+
+	s.FetchDocumentSymbols(uri, contentChanges[0].Text)
 }
 
 func (s *Workspace) FetchDocumentSymbols(uri string, text string) {

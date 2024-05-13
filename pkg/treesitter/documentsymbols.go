@@ -15,6 +15,7 @@ type Symbol struct {
 	Name     string
 	Kind     uint32
 	Position Position
+	Children []Symbol
 }
 
 func GetDocumentSymbols(content string) []Symbol {
@@ -26,14 +27,10 @@ func GetDocumentSymbols(content string) []Symbol {
 	var symbols []Symbol
 
 	WalkTree(content, tree.RootNode(), &symbols)
-
 	return symbols
 }
 
 func WalkTree(content string, node *sitter.Node, symbols *[]Symbol) {
-	if node == nil {
-		return
-	}
 
 	switch node.Type() {
 	case "variable_name":
@@ -94,8 +91,19 @@ func WalkTree(content string, node *sitter.Node, symbols *[]Symbol) {
 		}
 	}
 
+	var childrenSymbols []Symbol
+
 	for child := node.Child(0); child != nil; child = child.NextSibling() {
-		WalkTree(content, child, symbols)
+		WalkTree(content, child, &childrenSymbols)
+	}
+
+	canHaveChildren := node.Type() == "class_declaration" || node.Type() == "interface_declaration" || node.Type() == "trait_declaration" || node.Type() == "function_definition"
+
+	if canHaveChildren {
+		parent := &(*symbols)[len(*symbols)-1]
+		parent.Children = childrenSymbols
+	} else {
+		*symbols = append(*symbols, childrenSymbols...)
 	}
 }
 

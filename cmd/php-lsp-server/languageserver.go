@@ -138,4 +138,6 @@ func handleMessage(writer io.Writer, workspace *treesitter.Workspace, method str
 func writeResponse(writer io.Writer, message any) {
 	reply := rpc.EncodeMessage(message)
 	writer.Write([]byte(reply))
+
+	logger.GetLogger().Printf("Sending response: [%s]", reply)
 }

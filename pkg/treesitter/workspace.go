@@ -77,36 +77,45 @@ func (s *Workspace) Update(uri string, contentChanges []lsp.TextDocumentContentC
 	s.FetchDocumentSymbols(uri, contentChanges[0].Text)
 }
 
+func symbolToLspSymbol(symbol *Symbol) lsp.DocumentSymbol {
+	childs := []lsp.DocumentSymbol{}
+	for _, child := range symbol.Children {
+		childs = append(childs, symbolToLspSymbol(&child))
+	}
+
+	return lsp.DocumentSymbol{
+		Name: symbol.Name,
+		Kind: int(symbol.Kind),
+		Range: lsp.Range{
+			Start: lsp.Position{
+				Line:      int(symbol.Position.LineStart),
+				Character: int(symbol.Position.OffsetStart),
+			},
+			End: lsp.Position{
+				Line:      int(symbol.Position.LineEnd),
+				Character: int(symbol.Position.OffsetEnd),
+			},
+		},
+		SelectionRange: lsp.Range{
+			Start: lsp.Position{
+				Line:      int(symbol.Position.LineStart),
+				Character: int(symbol.Position.OffsetStart),
+			},
+			End: lsp.Position{
+				Line:      int(symbol.Position.LineEnd),
+				Character: int(symbol.Position.OffsetEnd),
+			},
+		},
+		Children: childs,
+	}
+}
+
 func (s *Workspace) FetchDocumentSymbols(uri string, text string) {
 	symbols := GetDocumentSymbols(text)
 
 	items := []lsp.DocumentSymbol{}
-
 	for _, symbol := range symbols {
-		items = append(items, lsp.DocumentSymbol{
-			Name: symbol.Name,
-			Kind: int(symbol.Kind),
-			Range: lsp.Range{
-				Start: lsp.Position{
-					Line:      int(symbol.Position.LineStart),
-					Character: int(symbol.Position.OffsetStart),
-				},
-				End: lsp.Position{
-					Line:      int(symbol.Position.LineEnd),
-					Character: int(symbol.Position.OffsetEnd),
-				},
-			},
-			SelectionRange: lsp.Range{
-				Start: lsp.Position{
-					Line:      int(symbol.Position.LineStart),
-					Character: int(symbol.Position.OffsetStart),
-				},
-				End: lsp.Position{
-					Line:      int(symbol.Position.LineEnd),
-					Character: int(symbol.Position.OffsetEnd),
-				},
-			},
-		})
+		items = append(items, symbolToLspSymbol(&symbol))
 	}
 
 	s.Uris[uri].DocumentSymbols = items
@@ -120,8 +129,6 @@ func (s *Workspace) TextDocumentDocumentSymbols(id int, uri string) lsp.Document
 		},
 		Result: s.Uris[uri].DocumentSymbols,
 	}
-
-	logger.GetLogger().Printf("Document symbol response: %v", response)
 
 	return response
 }

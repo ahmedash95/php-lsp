@@ -66,31 +66,23 @@ func handleMessage(writer io.Writer, workspace *treesitter.Workspace, method str
 			return
 		}
 
-		message := lsp.NewInitializeResponse(request.ID)
-		reply := rpc.EncodeMessage(message)
-
 		logger.Printf("Initializing workspace: %s", request.Params.RootPath)
 		workspace.RootPath = request.Params.RootPath
 
-		writer := os.Stdout
-		writer.Write([]byte(reply))
+		message := lsp.NewInitializeResponse(request.ID)
+		writeResponse(writer, message)
 
 		progressStartRequest := lsp.CreateProgressBeginRequest("indexing", "Indexing workspace")
-		progressStartReply := rpc.EncodeMessage(progressStartRequest)
-		logger.Println(progressStartReply)
-		writer.Write([]byte(progressStartReply))
+		writeResponse(writer, progressStartRequest)
 
 		update := func(path string, percent int) {
 			logger.Printf("Indexing file: %s", path)
 			progressUpdateRequest := lsp.CreateProgressUpdateRequest(progressStartRequest.Params.Token, path, percent)
-			progressUpdateReply := rpc.EncodeMessage(progressUpdateRequest)
-			logger.Println(progressUpdateReply)
-			writer.Write([]byte(progressUpdateReply))
+			writeResponse(writer, progressUpdateRequest)
 		}
 		workspace.StartIndex(update, func() {
 			progressEndRequest := lsp.CreateProgressEndRequest(progressStartRequest.Params.Token, "Indexing complete")
-			progressEndReply := rpc.EncodeMessage(progressEndRequest)
-			writer.Write([]byte(progressEndReply))
+			writeResponse(writer, progressEndRequest)
 		})
 	case "textDocument/didOpen":
 		var request lsp.DidOpenTextDocumentNotification

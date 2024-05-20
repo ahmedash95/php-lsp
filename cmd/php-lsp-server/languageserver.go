@@ -4,7 +4,7 @@ import (
 	"ahmedash95/php-lsp-server/pkg/logger"
 	"ahmedash95/php-lsp-server/pkg/lsp"
 	"ahmedash95/php-lsp-server/pkg/rpc"
-	"ahmedash95/php-lsp-server/pkg/treesitter"
+	"ahmedash95/php-lsp-server/pkg/workspace"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -21,7 +21,7 @@ func main() {
 
 	logger.SetLogger(l)
 
-	workspace := treesitter.NewWorkspace("")
+	workspace := workspace.NewWorkspace("")
 
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(rpc.Split)
@@ -34,11 +34,11 @@ func main() {
 			if r := recover(); r != nil {
 				l.Printf("Recovered in f: %v\n", r)
 				// Print the stack trace
-				fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+				l.Println("stacktrace from panic: \n" + string(debug.Stack()))
 			}
 		}()
 
-		logger.GetLogger().Printf("Recived request: [%s]", msg)
+		// logger.GetLogger().Printf("Recived request: [%s]", msg)
 		method, contents, err := rpc.DecodeMessage(msg)
 		if err != nil {
 			l.Println("Error decoding message: ", err)
@@ -49,7 +49,7 @@ func main() {
 	}
 }
 
-func handleMessage(writer io.Writer, workspace *treesitter.Workspace, method string, contents []byte) {
+func handleMessage(writer io.Writer, workspace *workspace.Workspace, method string, contents []byte) {
 	logger := logger.GetLogger()
 	logger.Printf("Recived message: [%s]", method)
 
@@ -77,7 +77,7 @@ func handleMessage(writer io.Writer, workspace *treesitter.Workspace, method str
 
 		update := func(path string, percent int) {
 			logger.Printf("Indexing file: %s", path)
-			progressUpdateRequest := lsp.CreateProgressUpdateRequest(progressStartRequest.Params.Token, path, percent)
+			progressUpdateRequest := lsp.CreateProgressUpdateRequest(progressStartRequest.Params.Token, "", percent)
 			writeResponse(writer, progressUpdateRequest)
 		}
 		workspace.StartIndex(update, func() {
@@ -124,6 +124,16 @@ func handleMessage(writer io.Writer, workspace *treesitter.Workspace, method str
 		writeResponse(writer, response)
 
 		logger.Printf("Returning workspace symbols response: %v", response)
+
+	case "textDocument/completion":
+		var request lsp.CompletionRequest
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Println("Error unmarshalling completion request: ", err)
+			return
+		}
+
+		response := workspace.TextDocumentCompletion(request.ID, request.Params.TextDocumentPositionParams)
+		writeResponse(writer, response)
 	}
 }
 

@@ -1,6 +1,7 @@
 package treesitter
 
 import (
+	"ahmedash95/php-lsp-server/pkg/lsp"
 	"context"
 
 	sitter "github.com/smacker/go-tree-sitter"
@@ -83,6 +84,14 @@ var Kind_Labels = map[int]string{
 	Kind_TypeParameter: Kind_TypeParameter_Label,
 }
 
+type TextDocumentItem struct {
+	Uri             string               `json:"uri"`
+	LanguageId      string               `json:"languageId"`
+	Version         int                  `json:"version"`
+	Text            string               `json:"text"`
+	DocumentSymbols []lsp.DocumentSymbol `json:"documentSymbols"`
+}
+
 func ParseDocument(content string) (*sitter.Tree, error) {
 	parser := sitter.NewParser()
 	parser.SetLanguage(php.GetLanguage())
@@ -90,6 +99,21 @@ func ParseDocument(content string) (*sitter.Tree, error) {
 	return parser.ParseCtx(context.Background(), nil, []byte(content))
 }
 
-func getNodeText(content string, node *sitter.Node) string {
+func GetNodeText(content string, node *sitter.Node) string {
 	return content[node.StartByte():node.EndByte()]
+}
+
+func FindNodesByType(node *sitter.Node, nodeType string) []*sitter.Node {
+	nodes := []*sitter.Node{}
+
+	if node.Type() == nodeType {
+		nodes = append(nodes, node)
+	}
+
+	for i := 0; i < int(node.ChildCount()); i++ {
+		child := node.Child(i)
+		nodes = append(nodes, FindNodesByType(child, nodeType)...)
+	}
+
+	return nodes
 }

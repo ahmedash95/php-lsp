@@ -9,6 +9,17 @@ The LSP is implemented in Go and is designed to be fast and efficient. and as Go
 - [x] Document Symbols
 - [x] Workspace Symbols
 - [ ] Completion
+    - [x] Local variables
+    - [x] Class properties and methods
+    - [ ] Static methods and properties
+    - [ ] Function names (eg. `app()->make()`)
+    - [ ] Class names (eg. `new Person()`)
+    - [ ] Namespaces and use statements
+    - [ ] Constants (eg. `PHP_EOL`)
+    - [ ] Keywords (eg. `self`, `parent`, `static`, `for`, `foreach`)
+    - [ ] Built-in functions (eg. `array_map`, `array_filter`)
+    - [ ] Method overrides
+    - [ ] Method chaining (eg. `$this->foo()->bar()`)
 - [ ] Code Actions
 - [ ] Hover
 - [ ] Signature Help

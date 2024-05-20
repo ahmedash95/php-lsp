@@ -51,8 +51,8 @@ func NewInitializeResponse(id int) InitializeResponse {
 		},
 		Result: InitializeResult{
 			Capabilities: ServerCapabilities{
-				TextDocumentSync:        1,   // Full sync
-				CompletionProvider:      nil, // map[string]any{},
+				TextDocumentSync:        1, // Full sync
+				CompletionProvider:      map[string]any{},
 				DocumentSymbolProvider:  true,
 				WorkspaceSymbolProvider: true,
 				Window: Window{

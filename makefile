@@ -10,5 +10,5 @@ build: build_langauge_server
 
 .PHONY: test
 test:
-	go test ./...
+	go clean -testcache && go test ./...
 

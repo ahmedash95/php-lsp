@@ -71,7 +71,6 @@ func WalkTree(content string, node *sitter.Node, symbols *[]Symbol) {
 	case "method_declaration":
 		n := findNodeOfType(node, "name")
 		*symbols = append(*symbols, getSymbolFromNode(content, Kind_Method, n))
-		return
 
 	case "property_declaration":
 		n := findNodeOfType(node, "name")
@@ -83,12 +82,13 @@ func WalkTree(content string, node *sitter.Node, symbols *[]Symbol) {
 		*symbols = append(*symbols, getSymbolFromNode(content, Kind_Constant, n))
 		return
 
-	case "function_call_expression":
-		if getNodeText(content, node.Child(0)) == "define" {
-			n := findNodeOfType(node.Child(1), "string")
-			*symbols = append(*symbols, getSymbolFromNode(content, Kind_Constant, n))
-
-		}
+		// disabled for now because it can't handle deifine($key, $value) calls
+		// case "function_call_expression":
+		// 	if GetNodeText(content, node.Child(0)) == "define" {
+		// 		n := findNodeOfType(node.Child(1), "string")
+		// 		*symbols = append(*symbols, getSymbolFromNode(content, Kind_Constant, n))
+		//
+		// 	}
 	}
 
 	var childrenSymbols []Symbol
@@ -109,7 +109,7 @@ func WalkTree(content string, node *sitter.Node, symbols *[]Symbol) {
 
 func getSymbolFromNode(content string, kind uint32, node *sitter.Node) Symbol {
 	return Symbol{
-		Name: getNodeText(content, node),
+		Name: GetNodeText(content, node),
 		Kind: kind,
 		Position: Position{
 			LineStart:   node.StartPoint().Row,

@@ -1,31 +1,25 @@
-package treesitter
+package workspace
 
 import (
 	"ahmedash95/php-lsp-server/internal/util"
+	"ahmedash95/php-lsp-server/pkg/completor"
 	"ahmedash95/php-lsp-server/pkg/logger"
 	"ahmedash95/php-lsp-server/pkg/lsp"
+	"ahmedash95/php-lsp-server/pkg/treesitter"
 	workspacescanner "ahmedash95/php-lsp-server/pkg/workspace_scanner"
 	"fmt"
 
 	"github.com/sahilm/fuzzy"
 )
 
-type TextDocumentItem struct {
-	Uri             string               `json:"uri"`
-	LanguageId      string               `json:"languageId"`
-	Version         int                  `json:"version"`
-	Text            string               `json:"text"`
-	DocumentSymbols []lsp.DocumentSymbol `json:"documentSymbols"`
-}
-
 type Workspace struct {
-	Uris     map[string]*TextDocumentItem
+	Uris     map[string]*treesitter.TextDocumentItem
 	RootPath string
 }
 
 func NewWorkspace(rootpath string) *Workspace {
 	return &Workspace{
-		Uris:     make(map[string]*TextDocumentItem),
+		Uris:     make(map[string]*treesitter.TextDocumentItem),
 		RootPath: rootpath,
 	}
 }
@@ -55,12 +49,12 @@ func (s *Workspace) StartIndex(update func(path string, percent int), end func()
 	}
 }
 
-func (s *Workspace) Get(uri string) *TextDocumentItem {
+func (s *Workspace) Get(uri string) *treesitter.TextDocumentItem {
 	return s.Uris[uri]
 }
 
 func (s *Workspace) Put(uri string, content string) {
-	s.Uris[uri] = &TextDocumentItem{
+	s.Uris[uri] = &treesitter.TextDocumentItem{
 		Uri:        uri,
 		LanguageId: "php",
 		Version:    1,
@@ -77,7 +71,7 @@ func (s *Workspace) Update(uri string, contentChanges []lsp.TextDocumentContentC
 	s.FetchDocumentSymbols(uri, contentChanges[0].Text)
 }
 
-func symbolToLspSymbol(symbol *Symbol) lsp.DocumentSymbol {
+func symbolToLspSymbol(symbol *treesitter.Symbol) lsp.DocumentSymbol {
 	childs := []lsp.DocumentSymbol{}
 	for _, child := range symbol.Children {
 		childs = append(childs, symbolToLspSymbol(&child))
@@ -111,7 +105,7 @@ func symbolToLspSymbol(symbol *Symbol) lsp.DocumentSymbol {
 }
 
 func (s *Workspace) FetchDocumentSymbols(uri string, text string) {
-	symbols := GetDocumentSymbols(text)
+	symbols := treesitter.GetDocumentSymbols(text)
 
 	items := []lsp.DocumentSymbol{}
 	for _, symbol := range symbols {
@@ -190,6 +184,35 @@ func (s *Workspace) WorkspaceSymbols(id int, query string) lsp.WorkspaceSymbolRe
 			ID:  id,
 		},
 		Result: symbols,
+	}
+
+	return response
+}
+
+func (s *Workspace) TextDocumentCompletion(id int, textDocumentPosition lsp.TextDocumentPositionParams) lsp.CompletionResponse {
+
+	pos := textDocumentPosition.Position
+	pos.Character = pos.Character - 1
+
+	doc := s.Get(textDocumentPosition.TextDocument.Uri)
+
+	completor := completor.NewCompletor()
+	matches := completor.GetCompletions(doc, pos)
+
+	completions := []lsp.CompletionItem{}
+	for _, match := range matches {
+		completions = append(completions, lsp.CompletionItem{
+			Label: match.Text,
+			Kind:  match.Kind,
+		})
+	}
+
+	response := lsp.CompletionResponse{
+		Response: lsp.Response{
+			RPC: "2.0",
+			ID:  id,
+		},
+		Result: completions,
 	}
 
 	return response
